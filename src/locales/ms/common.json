@@ -1,0 +1,10 @@
+{
+  "greeting": "Helo",
+  "farewell": "Selamat tinggal",
+  "Members": "Ahli",
+  "Add Member": "Tambah Ahli",
+  "Login": "Log Masuk",
+  "Email": "E-mel",
+  "Password": "Kata Laluan",
+  "Invalid email or password": "E-mel atau kata laluan tidak sah"
+}
