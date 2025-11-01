@@ -29,6 +29,7 @@ const CustomHeader = ({
   iRightSection = false
 }: CustomHeaderProps) => {
   const handleBackPress = () => {
+    console.log("Back button pressed");
     if (onBackPress) {
       onBackPress();
     } else {
@@ -80,6 +81,7 @@ const CustomHeader = ({
             <TouchableOpacity
               onPress={handleNotificationPress}
               style={styles.iconButton}
+              activeOpacity={0.6}
             >
               <Bell size={24} color="#000" />
             </TouchableOpacity>
@@ -104,6 +106,7 @@ const CustomHeader = ({
             <TouchableOpacity
               onPress={handleBackPress}
               style={styles.iconButton}
+              activeOpacity={0.6}
             >
               <ChevronLeft size={24} color="#000" />
             </TouchableOpacity>
@@ -123,6 +126,7 @@ const CustomHeader = ({
             <TouchableOpacity
               onPress={handleNotificationPress}
               style={styles.iconButton}
+              activeOpacity={0.6}
             >
               <Bell size={24} color="#000" />
             </TouchableOpacity>
@@ -142,9 +146,15 @@ const styles = StyleSheet.create({
   },
   leftSection: {
     width: 40,
+    height: 40,
+    justifyContent: "center",
+    alignItems: "center",
   },
   rightSection: {
     width: 40,
+    height: 40,
+    justifyContent: "center",
+    alignItems: "center",
   },
   iconButton: {
     width: 40,

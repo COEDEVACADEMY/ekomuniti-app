@@ -17,11 +17,11 @@ export default function WelcomeScreen() {
         />
 
         <YStack gap={12} alignItems="center" paddingHorizontal={20}>
-          <H2 fontSize={32} fontWeight="700" color="#1A2B4A" textAlign="center">
-            Social Trading{"\n"}Community
+          <H2 fontSize={28} fontWeight="700" color="#1569a0" textAlign="center">
+            Urus Keahlian Lebih Mudah,{"\n"}Semua Dalam Satu Platform
           </H2>
           <Text fontSize={16} color="#666" textAlign="center" lineHeight={24}>
-            Manage your community with ease. Connect members, track activities, and grow together.
+            Satu platform digital untuk persatuan & komuniti mengurus ahli, aktiviti, dan komunikasi dengan lebih teratur.
           </Text>
         </YStack>
       </YStack>
@@ -30,15 +30,15 @@ export default function WelcomeScreen() {
       <YStack gap={16} paddingBottom={20}>
         <Button
           size="$5"
-          backgroundColor="#D4FF00"
-          color="#1A2B4A"
+          backgroundColor="#1569a0"
+          color="white"
           borderRadius={30}
           fontWeight="700"
           fontSize={16}
           onPress={() => router.push("/login")}
-          pressStyle={{ scale: 0.98 }}
+          pressStyle={{ scale: 0.98, backgroundColor: "#0f5580" }}
         >
-          Get Started
+          Gabung Sekarang
         </Button>
 
         <Button
@@ -51,7 +51,7 @@ export default function WelcomeScreen() {
           onPress={() => router.push("/register")}
           pressStyle={{ opacity: 0.7 }}
         >
-          Don't have an account? Sign Up
+          Belum ada akaun? Daftar
         </Button>
       </YStack>
     </YStack>
