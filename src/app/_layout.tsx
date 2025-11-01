@@ -1,41 +1,46 @@
-import '@i18n';
-import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { Stack } from 'expo-router';
-import { StatusBar } from 'expo-status-bar';
-import 'react-native-reanimated';
-import * as eva from '@eva-design/eva';
-import { ApplicationProvider, IconRegistry } from '@ui-kitten/components';
-import { EvaIconsPack } from '@ui-kitten/eva-icons';
-import React from 'react';
-import { CustomThemeProvider, useTheme } from '@/context/theme-context';
-import { lightTheme, darkTheme } from '@/constants/eva-theme';
+import { TamaguiProvider } from 'tamagui';
+import config from '../tamagui.config';
+import { useFonts } from 'expo-font';
+import {
+  PlusJakartaSans_400Regular,
+  PlusJakartaSans_500Medium,
+  PlusJakartaSans_600SemiBold,
+  PlusJakartaSans_700Bold,
+} from '@expo-google-fonts/plus-jakarta-sans';
+import * as SplashScreen from 'expo-splash-screen';
+import { useEffect } from 'react';
 
-function AppLayout() {
-  const { theme } = useTheme();
-  const isDarkMode = theme === 'dark';
-
-  return (
-    <>
-      <IconRegistry icons={EvaIconsPack} />
-      <ApplicationProvider {...eva} theme={isDarkMode ? darkTheme : lightTheme}>
-        <ThemeProvider value={isDarkMode ? DarkTheme : DefaultTheme}>
-          <Stack>
-            <Stack.Screen name="index" options={{ title: 'Login' }} />
-            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-            <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
-            <Stack.Screen name="settings/choose-theme" options={{ title: 'Choose Theme' }} />
-          </Stack>
-          <StatusBar style={isDarkMode ? 'light' : 'dark'} />
-        </ThemeProvider>
-      </ApplicationProvider>
-    </>
-  );
-}
+// Keep splash screen visible while loading fonts
+SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
+  const [fontsLoaded, fontError] = useFonts({
+    PlusJakartaSans_400Regular,
+    PlusJakartaSans_500Medium,
+    PlusJakartaSans_600SemiBold,
+    PlusJakartaSans_700Bold,
+  });
+
+  useEffect(() => {
+    if (fontsLoaded || fontError) {
+      SplashScreen.hideAsync();
+    }
+  }, [fontsLoaded, fontError]);
+
+  if (!fontsLoaded && !fontError) {
+    return null;
+  }
+
   return (
-    <CustomThemeProvider>
-      <AppLayout />
-    </CustomThemeProvider>
+    <TamaguiProvider config={config}>
+      <Stack screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="index" options={{ headerShown: false }} />
+        <Stack.Screen name="welcome" options={{ headerShown: false }} />
+        <Stack.Screen name="login" options={{ headerShown: false }} />
+        <Stack.Screen name="register" options={{ headerShown: false }} />
+        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+      </Stack>
+    </TamaguiProvider>
   );
 }

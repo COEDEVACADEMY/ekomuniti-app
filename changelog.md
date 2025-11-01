@@ -1,6 +1,13 @@
 # Changelog
 
-## [Unreleased]
+## [2025-11-01] - Project Reset
+
+### Changed
+- Reset project to fresh Expo with expo-router configuration
+- Removed all custom features, hooks, context, and components
+- Cleaned up to default bare Expo template structure
+
+## [Previous Version]
 
 ### Added
 - Created `src/app/(tabs)/index.tsx` to redirect from `/tabs` to the home screen, fixing an "Unmatched Route" error.

@@ -4,15 +4,13 @@ module.exports = function(api) {
     presets: ['babel-preset-expo'],
     plugins: [
       [
-        'module-resolver',
+        '@tamagui/babel-plugin',
         {
-          root: ['./'],
-          alias: {
-            '@': './src',
-            '@i18n': './src/i18n',
-          }
-        }
-      ]
-    ]
+          components: ['tamagui'],
+          config: './src/tamagui.config.ts',
+          logTimings: true,
+        },
+      ],
+    ],
   };
 };
