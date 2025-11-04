@@ -1,90 +1,107 @@
-import { useState } from "react";
-import { ScrollView } from "react-native";
-import { YStack, XStack, H5, Button } from "tamagui";
+import { useState, useEffect } from "react";
+import { ScrollView, RefreshControl, ActivityIndicator, Alert } from "react-native";
+import { YStack, XStack, H5, Button, Text } from "tamagui";
+import { router } from "expo-router";
 import CustomHeader from "../../components/CustomHeader";
 import { MemberCard, SearchBar, FilterTabs } from "../../components/members";
 import { StatCard } from "../../components/home";
-import { Users, UserCheck, UserX, UserPlus } from "@tamagui/lucide-icons";
+import { Users, UserCheck, UserX, UserPlus, Clock } from "@tamagui/lucide-icons";
+import { MemberService } from "../../services/memberService";
+import { Member, TotalMemberStats } from "../../types/member";
 
-type FilterType = "All" | "Active" | "Inactive";
-
-// Mock data - ganti dengan data dari API nanti
-const MOCK_MEMBERS = [
-  {
-    id: "1",
-    name: "Ahmad bin Abdullah",
-    email: "ahmad@email.com",
-    phone: "+60 12-345 6789",
-    role: "Committee Member",
-    status: "Active" as const,
-    avatarUrl: "https://api.dicebear.com/7.x/avataaars/png?seed=Ahmad",
-  },
-  {
-    id: "2",
-    name: "Siti Nurhaliza",
-    email: "siti@email.com",
-    phone: "+60 12-987 6543",
-    role: "Treasurer",
-    status: "Active" as const,
-    avatarUrl: "https://api.dicebear.com/7.x/avataaars/png?seed=Siti",
-  },
-  {
-    id: "3",
-    name: "Rahman Hassan",
-    email: "rahman@email.com",
-    phone: "+60 13-456 7890",
-    role: "Member",
-    status: "Active" as const,
-    avatarUrl: "https://api.dicebear.com/7.x/avataaars/png?seed=Rahman",
-  },
-  {
-    id: "4",
-    name: "Fatimah Zahra",
-    email: "fatimah@email.com",
-    phone: "+60 14-567 8901",
-    role: "Secretary",
-    status: "Inactive" as const,
-    avatarUrl: "https://api.dicebear.com/7.x/avataaars/png?seed=Fatimah",
-  },
-  {
-    id: "5",
-    name: "Muhammad Ali",
-    email: "ali@email.com",
-    phone: "+60 15-678 9012",
-    role: "Member",
-    status: "Active" as const,
-    avatarUrl: "https://api.dicebear.com/7.x/avataaars/png?seed=Ali",
-  },
-  {
-    id: "6",
-    name: "Nurul Aina",
-    email: "nurul@email.com",
-    phone: "+60 16-789 0123",
-    role: "Member",
-    status: "Inactive" as const,
-    avatarUrl: "https://api.dicebear.com/7.x/avataaars/png?seed=Nurul",
-  },
-];
+type FilterType = "All" | "Active" | "Inactive" | "Pending";
 
 export default function MembersScreen() {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeFilter, setActiveFilter] = useState<FilterType>("All");
+  const [members, setMembers] = useState<Member[]>([]);
+  const [memberStats, setMemberStats] = useState<TotalMemberStats | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
 
-  // Filter members based on search and filter
-  const filteredMembers = MOCK_MEMBERS.filter((member) => {
-    const matchesSearch =
-      member.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      member.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      member.phone.includes(searchQuery);
+  useEffect(() => {
+    loadData();
+  }, []);
 
-    const matchesFilter =
-      activeFilter === "All" || member.status === activeFilter;
+  useEffect(() => {
+    // Reload data when search or filter changes
+    loadMembers();
+  }, [searchQuery, activeFilter, currentPage]);
 
-    return matchesSearch && matchesFilter;
+  const loadData = async () => {
+    await Promise.all([loadMemberStats(), loadMembers()]);
+  };
+
+  const loadMemberStats = async () => {
+    try {
+      const response = await MemberService.getTotalMembers();
+      if (response.success) {
+        setMemberStats(response.data);
+      }
+    } catch (error: any) {
+      console.error("Failed to load member stats:", error);
+
+      if (error?.message?.includes("Session expired")) {
+        router.replace("/login");
+      }
+    }
+  };
+
+  const loadMembers = async () => {
+    try {
+      setIsLoading(true);
+
+      const response = await MemberService.getMembers(
+        currentPage,
+        10,
+        searchQuery.trim() || undefined
+      );
+
+      if (response.success) {
+        setMembers(response.data);
+        setTotalPages(response.pagination.last_page);
+      }
+    } catch (error: any) {
+      console.error("Failed to load members:", error);
+
+      if (error?.message?.includes("Session expired")) {
+        router.replace("/login");
+      } else {
+        Alert.alert("Error", "Failed to load members. Please try again.");
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    setCurrentPage(1);
+    await loadData();
+    setRefreshing(false);
+  };
+
+  // Filter members based on local filter (after fetching from API)
+  const filteredMembers = members.filter((member) => {
+    if (activeFilter === "All") return true;
+    if (activeFilter === "Active") return member.user.status === "ACTIVE";
+    if (activeFilter === "Inactive") return member.user.status !== "ACTIVE";
+    if (activeFilter === "Pending") return member.subscribe_status === "UNPAID";
+    return true;
   });
 
-  const activeCount = MOCK_MEMBERS.filter((m) => m.status === "Active").length;
-  const inactiveCount = MOCK_MEMBERS.filter((m) => m.status === "Inactive").length;
+  const getMemberStatus = (member: Member): "Active" | "Inactive" => {
+    return member.user.status === "ACTIVE" ? "Active" : "Inactive";
+  };
+
+  const getMemberRole = (member: Member): string => {
+    if (member.user.is_verified === 1) {
+      return "Verified Member";
+    }
+    return "Pending Verification";
+  };
 
   return (
     <YStack flex={1} backgroundColor="#F5F5F5">
@@ -94,30 +111,45 @@ export default function MembersScreen() {
         showNotification={true}
       />
 
-      <ScrollView showsVerticalScrollIndicator={false}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
+      >
         <YStack padding={20} gap={20} paddingBottom={100}>
 
           {/* Stats Section */}
-          <XStack gap={12}>
-            <StatCard
-              icon={Users}
-              iconColor="#4A90E2"
-              label="Total"
-              value={MOCK_MEMBERS.length.toString()}
-            />
-            <StatCard
-              icon={UserCheck}
-              iconColor="#34C759"
-              label="Active"
-              value={activeCount.toString()}
-            />
-            <StatCard
-              icon={UserX}
-              iconColor="#FF3B30"
-              label="Inactive"
-              value={inactiveCount.toString()}
-            />
-          </XStack>
+          <YStack gap={12}>
+            <XStack gap={12}>
+              <StatCard
+                icon={Users}
+                iconColor="#4A90E2"
+                label="Total"
+                value={memberStats?.total_member.toString() || "0"}
+              />
+              <StatCard
+                icon={UserCheck}
+                iconColor="#34C759"
+                label="Active"
+                value={memberStats?.total_active.toString() || "0"}
+              />
+            </XStack>
+            <XStack gap={12}>
+              <StatCard
+                icon={Clock}
+                iconColor="#FF9500"
+                label="Pending"
+                value={memberStats?.total_pending.toString() || "0"}
+              />
+              <StatCard
+                icon={UserX}
+                iconColor="#FF3B30"
+                label="Expired"
+                value={memberStats?.total_expired.toString() || "0"}
+              />
+            </XStack>
+          </YStack>
 
           {/* Add Member Button */}
           <Button
@@ -155,7 +187,17 @@ export default function MembersScreen() {
               {filteredMembers.length} Members Found
             </H5>
 
-            {filteredMembers.length === 0 ? (
+            {isLoading && !refreshing ? (
+              <YStack
+                padding={40}
+                alignItems="center"
+                justifyContent="center"
+                gap={8}
+              >
+                <ActivityIndicator size="large" color="#4A90E2" />
+                <Text color="#999">Loading members...</Text>
+              </YStack>
+            ) : filteredMembers.length === 0 ? (
               <YStack
                 padding={40}
                 alignItems="center"
@@ -168,16 +210,28 @@ export default function MembersScreen() {
             ) : (
               filteredMembers.map((member) => (
                 <MemberCard
-                  key={member.id}
-                  name={member.name}
-                  email={member.email}
-                  phone={member.phone}
-                  role={member.role}
-                  status={member.status}
-                  avatarUrl={member.avatarUrl}
-                  onPress={() => console.log("View member", member.id)}
+                  key={member.id_user}
+                  name={member.user.fullname}
+                  email={member.user.email}
+                  phone={member.user.phone_number}
+                  role={getMemberRole(member)}
+                  status={getMemberStatus(member)}
+                  avatarUrl={`https://api.dicebear.com/7.x/avataaars/png?seed=${member.user.fullname}`}
+                  onPress={() => router.push(`/members/${member.id_detail_manpower}`)}
                 />
               ))
+            )}
+
+            {/* Pagination Info */}
+            {!isLoading && filteredMembers.length > 0 && (
+              <YStack alignItems="center" paddingVertical={16}>
+                <Text fontSize={14} color="#666">
+                  Page {currentPage} of {totalPages}
+                </Text>
+                <Text fontSize={12} color="#999" marginTop={4}>
+                  Showing {filteredMembers.length} of {memberStats?.total_member || 0} members
+                </Text>
+              </YStack>
             )}
           </YStack>
         </YStack>

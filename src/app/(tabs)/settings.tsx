@@ -1,18 +1,27 @@
-import { Alert, ScrollView, TouchableOpacity } from "react-native";
-import { YStack, XStack, Text, View, Separator } from "tamagui";
-import { router } from "expo-router";
 import {
-  User,
   Bell,
-  Lock,
+  ChevronRight,
   Globe,
   HelpCircle,
   Info,
+  Lock,
   LogOut,
-  ChevronRight,
   Mail,
   Shield,
+  User,
 } from "@tamagui/lucide-icons";
+import { router } from "expo-router";
+import { useEffect, useState } from "react";
+import {
+  ActivityIndicator,
+  Alert,
+  ScrollView,
+  TouchableOpacity,
+} from "react-native";
+import { Separator, Text, View, XStack, YStack } from "tamagui";
+import { AuthService } from "../../services/authService";
+import { User as UserType } from "../../types/auth";
+import { TokenStorage } from "../../utils/tokenStorage";
 
 interface SettingItemProps {
   icon: React.ReactNode;
@@ -93,6 +102,24 @@ const SectionHeader = ({ title }: SectionHeaderProps) => {
 };
 
 export default function SettingsScreen() {
+  const [user, setUser] = useState<UserType | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    loadUserData();
+  }, []);
+
+  const loadUserData = async () => {
+    try {
+      const cachedUser = await TokenStorage.getUser();
+      setUser(cachedUser);
+    } catch (error) {
+      console.error("Failed to load user data:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleLogout = () => {
     Alert.alert(
       "Log Keluar",
@@ -105,9 +132,35 @@ export default function SettingsScreen() {
         {
           text: "Log Keluar",
           style: "destructive",
-          onPress: () => {
-            // TODO: Clear auth state
-            router.replace("/welcome");
+          onPress: async () => {
+            try {
+              console.log("Starting logout process...");
+
+              // Call logout API and clear storage
+              const response = await AuthService.logout();
+
+              console.log("Logout successful:", response.message);
+
+              // Show success message
+              Alert.alert(
+                "Berjaya",
+                response.message || "Logout successful!",
+                [
+                  {
+                    text: "OK",
+                    onPress: () => {
+                      // Redirect to welcome screen
+                      router.replace("/welcome");
+                    },
+                  },
+                ],
+                { cancelable: false }
+              );
+            } catch (error) {
+              console.error("Logout error:", error);
+              // Even if error, still redirect (storage already cleared)
+              router.replace("/welcome");
+            }
           },
         },
       ],
@@ -115,10 +168,28 @@ export default function SettingsScreen() {
     );
   };
 
+  if (isLoading) {
+    return (
+      <YStack
+        flex={1}
+        backgroundColor="#F8F9FA"
+        justifyContent="center"
+        alignItems="center"
+      >
+        <ActivityIndicator size="large" color="#1569a0" />
+      </YStack>
+    );
+  }
+
   return (
     <YStack flex={1} backgroundColor="#F8F9FA">
       {/* Profile Section */}
-      <View backgroundColor="white" paddingVertical={24} paddingHorizontal={20}>
+      <View
+        backgroundColor="white"
+        paddingVertical={20}
+        paddingHorizontal={20}
+        paddingTop={45}
+      >
         <XStack alignItems="center" gap={16}>
           <View
             width={80}
@@ -131,20 +202,32 @@ export default function SettingsScreen() {
             <User size={40} color="white" />
           </View>
           <YStack flex={1}>
-            <Text fontSize={22} fontWeight="700" color="#000">
-              Ahmad Razak
+            <Text
+              fontSize={18}
+              fontWeight="700"
+              color="#000"
+              numberOfLines={2}
+              ellipsizeMode="tail"
+            >
+              {user?.fullname || "User"}
             </Text>
-            <Text fontSize={15} color="#666" marginTop={4}>
-              ahmad.razak@email.com
+            <Text
+              fontSize={14}
+              color="#666"
+              marginTop={4}
+              numberOfLines={1}
+              ellipsizeMode="tail"
+            >
+              {user?.email || "email@example.com"}
             </Text>
-            <TouchableOpacity
-              onPress={() => console.log("Edit profile")}
+            {/* <TouchableOpacity
+              onPress={() => router.push("/profile")}
               style={{ marginTop: 8 }}
             >
-              <Text fontSize={15} fontWeight="600" color="#1569a0">
+              <Text fontSize={14} fontWeight="600" color="#1569a0">
                 Lihat Profil
               </Text>
-            </TouchableOpacity>
+            </TouchableOpacity> */}
           </YStack>
         </XStack>
       </View>
@@ -157,7 +240,7 @@ export default function SettingsScreen() {
             icon={<User size={20} color="#1569a0" />}
             title="Maklumat Peribadi"
             subtitle="Nama, telefon, alamat"
-            onPress={() => console.log("Personal info")}
+            onPress={() => router.push("/profile")}
           />
           <Separator />
           <SettingItem
@@ -196,7 +279,7 @@ export default function SettingsScreen() {
             icon={<Globe size={20} color="#1569a0" />}
             title="Bahasa"
             subtitle="Bahasa Malaysia"
-            onPress={() => console.log("Language")}
+            onPress={() => router.push("/language")}
           />
         </View>
 

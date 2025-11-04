@@ -56,7 +56,7 @@ const CustomHeader = ({
           paddingVertical={30}
         >
           {/* Left: Avatar and Greeting */}
-          <XStack alignItems="center" gap={12}>
+          <XStack alignItems="center" gap={12} flex={1} marginRight={8}>
             <View style={styles.avatarContainer}>
               {avatarUrl ? (
                 <Image source={{ uri: avatarUrl }} style={styles.avatar} />
@@ -66,11 +66,17 @@ const CustomHeader = ({
                 </View>
               )}
             </View>
-            <YStack>
+            <YStack flex={1}>
               <Text fontSize={14} color="#666">
                 {subtitle || "Welcome Back"}
               </Text>
-              <Text fontSize={20} fontWeight="700" color="#000">
+              <Text
+                fontSize={18}
+                fontWeight="700"
+                color="#000"
+                numberOfLines={1}
+                ellipsizeMode="tail"
+              >
                 {userName || "User"}
               </Text>
             </YStack>
@@ -142,7 +148,7 @@ const CustomHeader = ({
 const styles = StyleSheet.create({
   container: {
     backgroundColor: "default",
-    paddingTop: 10,
+    paddingTop: 20,
   },
   leftSection: {
     width: 40,

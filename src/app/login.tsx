@@ -3,10 +3,9 @@ import { KeyboardAvoidingView, Platform, TouchableOpacity, Alert } from "react-n
 import { YStack, XStack, Button, H2, Text, Input, Card } from "tamagui";
 import { Mail, Lock, Eye, EyeOff } from "@tamagui/lucide-icons";
 import { router } from "expo-router";
-
-// Dummy credentials
-const DUMMY_EMAIL = "user@example.com";
-const DUMMY_PASSWORD = "123";
+import { AuthService } from "../services/authService";
+import { ApiError } from "../types/auth";
+import { TokenStorage } from "../utils/tokenStorage";
 
 export default function LoginScreen() {
   const [email, setEmail] = useState("");
@@ -15,7 +14,7 @@ export default function LoginScreen() {
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleLogin = () => {
+  const handleLogin = async () => {
     // Clear previous errors
     setError("");
 
@@ -34,24 +33,47 @@ export default function LoginScreen() {
 
     setIsLoading(true);
 
-    // Simulate API call delay
-    setTimeout(() => {
-      // Check dummy credentials
-      if (email === DUMMY_EMAIL && password === DUMMY_PASSWORD) {
-        // Success - redirect to main app
-        setIsLoading(false);
-        router.replace("/(tabs)");
-      } else {
-        // Failed - show error
-        setIsLoading(false);
-        setError("Invalid email or password");
+    try {
+      // Call API login
+      const response = await AuthService.login(email, password);
+
+      if (response.success) {
+        // Success - save token and user data to AsyncStorage
+        console.log("Login successful:", response.data);
+        console.log("User:", response.data.user.fullname);
+        console.log("Token:", response.data.token);
+
+        // Save token and user data
+        await TokenStorage.saveToken(response.data.token);
+        await TokenStorage.saveUser(response.data.user);
+
         Alert.alert(
-          "Login Failed",
-          "Invalid email or password. Please try again.\n\nDummy credentials:\nEmail: user@example.com\nPassword: 123",
-          [{ text: "OK" }]
+          "Login Successful",
+          `Welcome, ${response.data.user.fullname}!`,
+          [
+            {
+              text: "OK",
+              onPress: () => router.replace("/(tabs)"),
+            },
+          ]
         );
+      } else {
+        setError(response.message || "Login failed");
       }
-    }, 500);
+    } catch (err) {
+      const error = err as ApiError;
+      setError(error.message || "An error occurred. Please try again.");
+
+      console.error("Login error details:", error);
+
+      // Show detailed error if available
+      if (error.errors) {
+        const errorMessages = Object.values(error.errors).flat().join("\n");
+        Alert.alert("Login Failed", errorMessages, [{ text: "OK" }]);
+      }
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -189,20 +211,6 @@ export default function LoginScreen() {
             {isLoading ? "Signing In..." : "Sign In"}
           </Button>
 
-          {/* Dummy Credentials Info */}
-          <Card
-            backgroundColor="#4A90E215"
-            borderRadius={8}
-            padding={12}
-            marginTop={12}
-          >
-            <Text fontSize={12} color="#4A90E2" textAlign="center" fontWeight="600">
-              Demo Login Credentials
-            </Text>
-            <Text fontSize={11} color="#666" textAlign="center" marginTop={4}>
-              Email: user@example.com{"\n"}Password: 123
-            </Text>
-          </Card>
         </YStack>
 
         {/* Divider */}

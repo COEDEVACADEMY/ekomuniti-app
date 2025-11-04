@@ -1,6 +1,6 @@
 import { XStack, Button } from "tamagui";
 
-type FilterType = "All" | "Active" | "Inactive";
+type FilterType = "All" | "Active" | "Inactive" | "Pending";
 
 interface FilterTabsProps {
   activeFilter: FilterType;
@@ -8,7 +8,7 @@ interface FilterTabsProps {
 }
 
 export const FilterTabs = ({ activeFilter, onFilterChange }: FilterTabsProps) => {
-  const filters: FilterType[] = ["All", "Active", "Inactive"];
+  const filters: FilterType[] = ["All", "Active", "Pending", "Inactive"];
 
   return (
     <XStack gap={8}>
