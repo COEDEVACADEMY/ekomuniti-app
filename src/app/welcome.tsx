@@ -1,6 +1,7 @@
 import { Image } from "react-native";
 import { YStack, Button, H2, Text } from "tamagui";
 import { router } from "expo-router";
+import React from "react";
 
 export default function WelcomeScreen() {
   return (

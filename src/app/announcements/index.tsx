@@ -5,6 +5,7 @@ import { Bell, Search, ChevronRight } from "@tamagui/lucide-icons";
 import { router } from "expo-router";
 import CustomHeader from "../../components/CustomHeader";
 import { Announcement } from "../../types/announcement";
+import React from "react";
 
 // Mock data - replace with API call later
 const MOCK_ANNOUNCEMENTS: Announcement[] = [

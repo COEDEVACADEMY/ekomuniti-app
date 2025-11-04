@@ -11,17 +11,19 @@ import {
   User,
 } from "@tamagui/lucide-icons";
 import { router } from "expo-router";
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
   ScrollView,
   TouchableOpacity,
+  Image,
 } from "react-native";
 import { Separator, Text, View, XStack, YStack } from "tamagui";
 import { AuthService } from "../../services/authService";
 import { User as UserType } from "../../types/auth";
 import { TokenStorage } from "../../utils/tokenStorage";
+import { ASSET_BASE_URL } from "../../config/api";
 
 interface SettingItemProps {
   icon: React.ReactNode;
@@ -181,6 +183,10 @@ export default function SettingsScreen() {
     );
   }
 
+  const profileImageUrl = user?.photo
+    ? `${ASSET_BASE_URL}/Profil/${user.photo}`
+    : undefined;
+
   return (
     <YStack flex={1} backgroundColor="#F8F9FA">
       {/* Profile Section */}
@@ -195,11 +201,18 @@ export default function SettingsScreen() {
             width={80}
             height={80}
             borderRadius={40}
-            backgroundColor="#1569a0"
+            backgroundColor="#E0E0E0" // Neutral background color
             alignItems="center"
             justifyContent="center"
           >
-            <User size={40} color="white" />
+            {profileImageUrl ? (
+              <Image
+                source={{ uri: profileImageUrl }}
+                style={{ width: 80, height: 80, borderRadius: 40 }}
+              />
+            ) : (
+              <User size={40} color="#999" /> // Neutral icon color
+            )}
           </View>
           <YStack flex={1}>
             <Text

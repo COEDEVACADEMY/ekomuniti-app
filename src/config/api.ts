@@ -19,7 +19,7 @@
 // NGROK SETUP (RECOMMENDED)
 // ============================================
 const USE_NGROK = true; // Set true untuk pakai ngrok
-const NGROK_URL = "https://a5abbabe55aa.ngrok-free.app"; // <-- GANTI INI dengan URL ngrok Anda!
+const NGROK_URL = "https://7cd5576a7751.ngrok-free.app"; // <-- GANTI INI dengan URL ngrok Anda!
 
 // ============================================
 // LOCAL IP SETUP (Alternative)
@@ -38,6 +38,9 @@ const API_URLS = {
 };
 
 export const API_BASE_URL = API_URLS[ENV];
+
+// Derive ASSET_BASE_URL by removing '/api' from API_BASE_URL
+export const ASSET_BASE_URL = API_BASE_URL.replace("/api", "");
 
 // Export untuk debugging
 export const API_CONFIG = {

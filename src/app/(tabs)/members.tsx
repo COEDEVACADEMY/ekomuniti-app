@@ -8,6 +8,8 @@ import { StatCard } from "../../components/home";
 import { Users, UserCheck, UserX, UserPlus, Clock } from "@tamagui/lucide-icons";
 import { MemberService } from "../../services/memberService";
 import { Member, TotalMemberStats } from "../../types/member";
+import React from "react";
+import { ASSET_BASE_URL } from "../../config/api";
 
 type FilterType = "All" | "Active" | "Inactive" | "Pending";
 
@@ -216,7 +218,7 @@ export default function MembersScreen() {
                   phone={member.user.phone_number}
                   role={getMemberRole(member)}
                   status={getMemberStatus(member)}
-                  avatarUrl={`https://api.dicebear.com/7.x/avataaars/png?seed=${member.user.fullname}`}
+                  avatarUrl={member.user.photo ? `${ASSET_BASE_URL}/Profil/${member.user.photo}` : `https://api.dicebear.com/7.x/avataaars/png?seed=${member.user.fullname}`}
                   onPress={() => router.push(`/members/${member.id_detail_manpower}`)}
                 />
               ))

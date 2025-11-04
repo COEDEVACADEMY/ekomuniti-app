@@ -1,4 +1,12 @@
-import { LoginRequest, LoginResponse, ApiError, GetMeResponse, LogoutResponse, RefreshTokenResponse } from "../types/auth";
+import {
+  LoginRequest,
+  LoginResponse,
+  ApiError,
+  GetMeResponse,
+  LogoutResponse,
+  RefreshTokenResponse,
+  ProfileUpdatePayload,
+} from "../types/auth";
 import { API_BASE_URL, API_CONFIG } from "../config/api";
 import { TokenStorage } from "../utils/tokenStorage";
 
@@ -278,6 +286,90 @@ export class AuthService {
         success: true,
         message: "Logged out locally (API error)",
       };
+    }
+  }
+
+  /**
+   * Update user profile
+   * @param payload - Profile data to update
+   * @returns Promise with updated user data
+   */
+  static async updateProfile(
+    payload: ProfileUpdatePayload
+  ): Promise<GetMeResponse> {
+    try {
+      const authToken = await TokenStorage.getToken();
+      if (!authToken) {
+        throw {
+          success: false,
+          message: "No authentication token found",
+        } as ApiError;
+      }
+
+      console.log("Attempting to update profile to:", `${API_BASE_URL}/profile`);
+
+      const formData = new FormData();
+
+      // Append fields to FormData
+      Object.keys(payload).forEach((key) => {
+        const value = payload[key as keyof ProfileUpdatePayload];
+        if (value === undefined || value === null) return;
+
+        if (key === "img" && value) {
+          const uri = value as string;
+          const filename = uri.split("/").pop();
+          const match = /\.(\w+)$/.exec(filename!);
+          const type = match ? `image/${match[1]}` : `image`;
+          formData.append("img", { uri, name: filename, type } as any);
+        } else {
+          formData.append(key, value as string);
+        }
+      });
+
+      const response = await fetch(`${API_BASE_URL}/profile`, {
+        method: "POST",
+        headers: {
+          Accept: "application/json",
+          Authorization: `Bearer ${authToken}`,
+          // 'Content-Type' is not set, fetch handles it for FormData
+        },
+        body: formData,
+      });
+
+      const data = await response.json();
+      console.log("Update profile response:", data);
+
+      if (!response.ok) {
+        throw {
+          success: false,
+          message: data.message || "Failed to update profile",
+          errors: data.errors,
+        } as ApiError;
+      }
+
+      if (!data.success) {
+        throw {
+          success: false,
+          message: data.message || "Failed to update profile",
+          errors: data.errors,
+        } as ApiError;
+      }
+
+      // Save updated user data to storage
+      if (data.data) {
+        await TokenStorage.saveUser(data.data);
+      }
+
+      return data as GetMeResponse;
+    } catch (error) {
+      console.error("Update profile error:", error);
+      if ((error as ApiError).success === false) {
+        throw error;
+      }
+      throw {
+        success: false,
+        message: "Network error. Please check your connection.",
+      } as ApiError;
     }
   }
 }

@@ -1,16 +1,33 @@
-import { Redirect } from 'expo-router';
+import { router } from 'expo-router';
+import { useEffect, useState } from 'react';
+import { View } from 'tamagui';
+import { TokenStorage } from '../utils/tokenStorage';
+import React from 'react';
 
 export default function Index() {
-  // TODO: Add authentication check here
-  // If user is logged in, redirect to /(tabs)
-  // Otherwise, redirect to /welcome
+  const [authChecked, setAuthChecked] = useState(false);
 
-  const isAuthenticated = false; // Change this based on your auth logic
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const isAuthenticated = await TokenStorage.isAuthenticated();
+        if (isAuthenticated) {
+          router.replace('/(tabs)');
+        } else {
+          router.replace('/welcome');
+        }
+      } catch (error) {
+        console.error("Auth check failed", error);
+        router.replace('/welcome');
+      } finally {
+        setAuthChecked(true);
+      }
+    };
 
-  if (isAuthenticated) {
-    return <Redirect href="/(tabs)" />;
-  }
+    checkAuth();
+  }, []);
 
-  // Default route to welcome screen
-  return <Redirect href="/welcome" />;
+  // Return a loading view or null while checking auth
+  // This allows the splash screen to be visible
+  return <View />;
 }

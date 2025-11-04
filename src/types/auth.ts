@@ -64,3 +64,10 @@ export interface RefreshTokenResponse {
     token: string;
   };
 }
+
+export interface ProfileUpdatePayload {
+  fullname?: string;
+  phone_number?: string;
+  email?: string;
+  img?: string; // URI of the image
+}

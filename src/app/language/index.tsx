@@ -3,6 +3,7 @@ import { Alert } from "react-native";
 import { YStack, XStack, Card, Text, Button, ScrollView } from "tamagui";
 import { Check } from "@tamagui/lucide-icons";
 import CustomHeader from "../../components/CustomHeader";
+import React from "react";
 
 const languages = [
   { id: "ms", name: "Malaysia", emoji: "🇲🇾" },

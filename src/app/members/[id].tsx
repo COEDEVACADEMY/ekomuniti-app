@@ -17,6 +17,9 @@ import { router, useLocalSearchParams } from "expo-router";
 import CustomHeader from "../../components/CustomHeader";
 import { MemberService } from "../../services/memberService";
 import { Member } from "../../types/member";
+import React from "react";
+import { Image } from "react-native";
+import { ASSET_BASE_URL } from "../../config/api";
 
 export default function MemberDetailScreen() {
   const { id } = useLocalSearchParams();
@@ -139,12 +142,19 @@ export default function MemberDetailScreen() {
               width={100}
               height={100}
               borderRadius={50}
-              backgroundColor="#4A90E2"
+              backgroundColor="#E0E0E0"
               alignItems="center"
               justifyContent="center"
               marginBottom={16}
             >
-              <User size={48} color="white" />
+              {member.user.photo ? (
+                <Image
+                  source={{ uri: `${ASSET_BASE_URL}/Profil/${member.user.photo}` }}
+                  style={{ width: 100, height: 100, borderRadius: 50 }}
+                />
+              ) : (
+                <User size={48} color="#999" />
+              )}
             </View>
 
             <Text fontSize={22} fontWeight="700" color="#000" textAlign="center">

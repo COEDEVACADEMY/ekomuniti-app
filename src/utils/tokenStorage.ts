@@ -3,6 +3,7 @@ import { User } from "../types/auth";
 
 const TOKEN_KEY = "@ekomuniti_token";
 const USER_KEY = "@ekomuniti_user";
+const HAS_VISITED_HOME_KEY = "@ekomuniti_has_visited_home";
 
 /**
  * Token Storage Utility
@@ -100,5 +101,29 @@ export class TokenStorage {
   static async isAuthenticated(): Promise<boolean> {
     const token = await this.getToken();
     return !!token;
+  }
+
+  /**
+   * Set the flag for whether the user has visited the home screen in this session
+   */
+  static async setHasVisitedHome(hasVisited: boolean): Promise<void> {
+    try {
+      await AsyncStorage.setItem(HAS_VISITED_HOME_KEY, JSON.stringify(hasVisited));
+    } catch (error) {
+      console.error("Error setting has visited home flag:", error);
+    }
+  }
+
+  /**
+   * Get the flag for whether the user has visited the home screen in this session
+   */
+  static async getHasVisitedHome(): Promise<boolean> {
+    try {
+      const value = await AsyncStorage.getItem(HAS_VISITED_HOME_KEY);
+      return value ? JSON.parse(value) : false;
+    } catch (error) {
+      console.error("Error getting has visited home flag:", error);
+      return false; // Default to false on error
+    }
   }
 }

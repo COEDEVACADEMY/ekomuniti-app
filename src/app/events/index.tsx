@@ -5,6 +5,7 @@ import { Calendar, Search, MapPin, Clock } from "@tamagui/lucide-icons";
 import { router } from "expo-router";
 import CustomHeader from "../../components/CustomHeader";
 import { Event } from "../../types/event";
+import React from "react";
 
 // Mock data - replace with API call later
 const MOCK_EVENTS: Event[] = [

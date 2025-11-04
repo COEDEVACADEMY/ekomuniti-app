@@ -1,12 +1,24 @@
-import { useState, useEffect } from "react";
-import { ScrollView, Alert, TouchableOpacity } from "react-native";
-import { YStack, XStack, Card, Text, View, Input, Button } from "tamagui";
-import { User, Mail, Phone, MapPin, Pencil, Save, X } from "@tamagui/lucide-icons";
+import {
+  Camera,
+  Mail,
+  MapPin,
+  Pencil,
+  Phone,
+  Save,
+  User,
+  X,
+} from "@tamagui/lucide-icons";
 import { router } from "expo-router";
+import { useEffect, useState } from "react";
+import { Alert, Image, ScrollView, TouchableOpacity } from "react-native";
+import { Button, Card, Input, Text, View, XStack, YStack } from "tamagui";
 import CustomHeader from "../components/CustomHeader";
-import { TokenStorage } from "../utils/tokenStorage";
-import { User as UserType } from "../types/auth";
 import { AuthService } from "../services/authService";
+import { ProfileUpdatePayload, User as UserType } from "../types/auth";
+import { TokenStorage } from "../utils/tokenStorage";
+import React from "react";
+import * as ImagePicker from "expo-image-picker";
+import { ASSET_BASE_URL } from "../config/api";
 
 export default function ProfileScreen() {
   const [user, setUser] = useState<UserType | null>(null);
@@ -18,6 +30,7 @@ export default function ProfileScreen() {
   const [fullname, setFullname] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
   const [email, setEmail] = useState("");
+  const [image, setImage] = useState<string | null>(null);
 
   useEffect(() => {
     loadUserData();
@@ -56,6 +69,7 @@ export default function ProfileScreen() {
     setFullname(userData.fullname || "");
     setPhoneNumber(userData.phone_number || "");
     setEmail(userData.email || "");
+    setImage(null); // Reset image selection
   };
 
   const handleEdit = () => {
@@ -67,6 +81,20 @@ export default function ProfileScreen() {
       populateForm(user);
     }
     setIsEditing(false);
+  };
+
+  const pickImage = async () => {
+    // No permissions needed to launch the image library
+    let result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.8,
+    });
+
+    if (!result.canceled) {
+      setImage(result.assets[0].uri);
+    }
   };
 
   const handleSave = async () => {
@@ -91,31 +119,23 @@ export default function ProfileScreen() {
         return;
       }
 
-      // TODO: Call API to update profile
-      // const response = await ApiHelper.put(`${API_BASE_URL}/profile`, {
-      //   fullname,
-      //   phone_number: phoneNumber,
-      //   email,
-      // });
-
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-
-      // Update local state and storage
-      const updatedUser: UserType = {
-        ...user!,
+      const payload: ProfileUpdatePayload = {
         fullname,
         phone_number: phoneNumber,
         email,
-        updated_at: new Date().toISOString(),
+        img: image || undefined,
       };
 
-      setUser(updatedUser);
-      await TokenStorage.saveUser(updatedUser);
+      const response = await AuthService.updateProfile(payload);
+
+      // Update local state and storage
+      setUser(response.data);
+      await TokenStorage.saveUser(response.data);
 
       setIsEditing(false);
+      setImage(null); // Clear image selection
 
-      Alert.alert("Success", "Profile updated successfully!");
+      Alert.alert("Success", response.message || "Profile updated successfully!");
     } catch (error: any) {
       console.error("Failed to update profile:", error);
       Alert.alert("Error", error.message || "Failed to update profile");
@@ -141,6 +161,12 @@ export default function ProfileScreen() {
       </YStack>
     );
   }
+
+  const profileImageUrl = image
+    ? image
+    : user?.photo
+    ? `${ASSET_BASE_URL}/Profil/${user.photo}`
+    : undefined;
 
   return (
     <YStack flex={1} backgroundColor="#F5F5F5">
@@ -168,17 +194,47 @@ export default function ProfileScreen() {
               width={100}
               height={100}
               borderRadius={50}
-              backgroundColor="#4A90E2"
+              backgroundColor="#E0E0E0"
               alignItems="center"
               justifyContent="center"
               marginBottom={16}
             >
-              <User size={48} color="white" />
+              {profileImageUrl ? (
+                <Image
+                  source={{ uri: profileImageUrl }}
+                  style={{ width: 100, height: 100, borderRadius: 50 }}
+                />
+              ) : (
+                <User size={48} color="#999" />
+              )}
+
+              {isEditing && (
+                <TouchableOpacity
+                  onPress={pickImage}
+                  style={{
+                    position: "absolute",
+                    bottom: 0,
+                    right: 0,
+                    backgroundColor: "#4A90E2",
+                    padding: 8,
+                    borderRadius: 20,
+                    borderWidth: 2,
+                    borderColor: "white",
+                  }}
+                >
+                  <Camera size={18} color="white" />
+                </TouchableOpacity>
+              )}
             </View>
 
             {!isEditing && (
               <>
-                <Text fontSize={22} fontWeight="700" color="#000" textAlign="center">
+                <Text
+                  fontSize={22}
+                  fontWeight="700"
+                  color="#000"
+                  textAlign="center"
+                >
                   {user?.fullname || "User"}
                 </Text>
                 <Text fontSize={14} color="#666" marginTop={4}>
@@ -210,7 +266,11 @@ export default function ProfileScreen() {
             shadowOpacity={0.08}
             shadowRadius={8}
           >
-            <XStack justifyContent="space-between" alignItems="center" marginBottom={20}>
+            <XStack
+              justifyContent="space-between"
+              alignItems="center"
+              marginBottom={20}
+            >
               <Text fontSize={18} fontWeight="600" color="#000">
                 Profile Information
               </Text>
@@ -234,11 +294,7 @@ export default function ProfileScreen() {
                   Full Name
                 </Text>
                 {isEditing ? (
-                  <Card
-                    backgroundColor="#F8F9FA"
-                    borderRadius={8}
-                    padding={12}
-                  >
+                  <Card backgroundColor="#F8F9FA" borderRadius={8} padding={12}>
                     <Input
                       value={fullname}
                       onChangeText={setFullname}
@@ -274,11 +330,7 @@ export default function ProfileScreen() {
                   Email Address
                 </Text>
                 {isEditing ? (
-                  <Card
-                    backgroundColor="#F8F9FA"
-                    borderRadius={8}
-                    padding={12}
-                  >
+                  <Card backgroundColor="#F8F9FA" borderRadius={8} padding={12}>
                     <Input
                       value={email}
                       onChangeText={setEmail}
@@ -316,11 +368,7 @@ export default function ProfileScreen() {
                   Phone Number
                 </Text>
                 {isEditing ? (
-                  <Card
-                    backgroundColor="#F8F9FA"
-                    borderRadius={8}
-                    padding={12}
-                  >
+                  <Card backgroundColor="#F8F9FA" borderRadius={8} padding={12}>
                     <Input
                       value={phoneNumber}
                       onChangeText={setPhoneNumber}
@@ -371,11 +419,14 @@ export default function ProfileScreen() {
                       </View>
                       <Text fontSize={15} color="#666" flex={1}>
                         {user?.created_at
-                          ? new Date(user.created_at).toLocaleDateString("en-MY", {
-                              day: "numeric",
-                              month: "long",
-                              year: "numeric",
-                            })
+                          ? new Date(user.created_at).toLocaleDateString(
+                              "en-MY",
+                              {
+                                day: "numeric",
+                                month: "long",
+                                year: "numeric",
+                              }
+                            )
                           : "-"}
                       </Text>
                     </XStack>

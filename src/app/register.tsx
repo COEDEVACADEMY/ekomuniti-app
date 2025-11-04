@@ -3,6 +3,7 @@ import { KeyboardAvoidingView, Platform, TouchableOpacity, ScrollView } from "re
 import { YStack, XStack, Button, H2, Text, Input, Card } from "tamagui";
 import { User, Mail, Lock, Eye, EyeOff, ArrowLeft, Phone } from "@tamagui/lucide-icons";
 import { router } from "expo-router";
+import React from "react";
 
 export default function RegisterScreen() {
   const [fullName, setFullName] = useState("");

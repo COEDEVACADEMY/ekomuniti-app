@@ -5,6 +5,7 @@ import { Bell, Calendar, Share2, Bookmark } from "@tamagui/lucide-icons";
 import { router, useLocalSearchParams } from "expo-router";
 import CustomHeader from "../../components/CustomHeader";
 import { Announcement } from "../../types/announcement";
+import React from "react";
 
 // Mock data - same as list screen
 const MOCK_ANNOUNCEMENTS: Announcement[] = [

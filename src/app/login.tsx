@@ -6,6 +6,7 @@ import { router } from "expo-router";
 import { AuthService } from "../services/authService";
 import { ApiError } from "../types/auth";
 import { TokenStorage } from "../utils/tokenStorage";
+import React from "react";
 
 export default function LoginScreen() {
   const [email, setEmail] = useState("");
@@ -46,6 +47,9 @@ export default function LoginScreen() {
         // Save token and user data
         await TokenStorage.saveToken(response.data.token);
         await TokenStorage.saveUser(response.data.user);
+
+        // Set has visited home flag to false for the new session
+        await TokenStorage.setHasVisitedHome(false);
 
         Alert.alert(
           "Login Successful",

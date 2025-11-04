@@ -20,16 +20,29 @@ import { MemberService } from "../../services/memberService";
 import { TokenStorage } from "../../utils/tokenStorage";
 import { User } from "../../types/auth";
 import { TotalMemberStats } from "../../types/member";
+import { ASSET_BASE_URL } from "../../config/api";
 
 export default function HomeScreen() {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [memberStats, setMemberStats] = useState<TotalMemberStats | null>(null);
+  const [subtitle, setSubtitle] = useState("");
 
   useEffect(() => {
     loadData();
+    checkFirstVisit();
   }, []);
+
+  const checkFirstVisit = async () => {
+    const hasVisited = await TokenStorage.getHasVisitedHome();
+    if (hasVisited) {
+      setSubtitle("Welcome Back");
+    } else {
+      setSubtitle("Welcome");
+      await TokenStorage.setHasVisitedHome(true);
+    }
+  };
 
   const loadData = async () => {
     await Promise.all([loadUserData(), loadMemberStats()]);
@@ -106,12 +119,17 @@ export default function HomeScreen() {
     );
   }
 
+  const profileImageUrl = user?.photo
+    ? `${ASSET_BASE_URL}/Profil/${user.photo}`
+    : undefined;
+
   return (
     <YStack flex={1} backgroundColor="#F5F5F5">
       <CustomHeader
         variant="withAvatar"
         userName={user?.fullname || "User"}
-        subtitle="Welcome Back"
+        subtitle={subtitle}
+        avatarUrl={profileImageUrl}
       />
 
       <ScrollView

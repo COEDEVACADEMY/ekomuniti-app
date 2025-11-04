@@ -10,6 +10,7 @@ import {
 } from '@expo-google-fonts/plus-jakarta-sans';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
+import React from 'react';
 
 // Keep splash screen visible while loading fonts
 SplashScreen.preventAutoHideAsync();

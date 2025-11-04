@@ -13,6 +13,7 @@ import {
 import { router, useLocalSearchParams } from "expo-router";
 import CustomHeader from "../../components/CustomHeader";
 import { Event } from "../../types/event";
+import React from "react";
 
 // Mock data - same as list screen
 const MOCK_EVENTS: Event[] = [
