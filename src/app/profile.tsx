@@ -1,7 +1,6 @@
 import {
   Camera,
   Mail,
-  MapPin,
   Pencil,
   Phone,
   Save,
@@ -26,7 +25,7 @@ export default function ProfileScreen() {
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
-  // Form fields
+  // Form fields - only 4 editable fields
   const [fullname, setFullname] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
   const [email, setEmail] = useState("");
@@ -84,7 +83,6 @@ export default function ProfileScreen() {
   };
 
   const pickImage = async () => {
-    // No permissions needed to launch the image library
     let result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
@@ -126,19 +124,32 @@ export default function ProfileScreen() {
         img: image || undefined,
       };
 
+      console.log("=== Sending Profile Update ===");
+      console.log("Payload:", JSON.stringify(payload, null, 2));
+
       const response = await AuthService.updateProfile(payload);
+
+      console.log("=== Profile Update Success ===");
+      console.log("Response:", JSON.stringify(response, null, 2));
 
       // Update local state and storage
       setUser(response.data);
       await TokenStorage.saveUser(response.data);
 
       setIsEditing(false);
-      setImage(null); // Clear image selection
+      setImage(null);
 
       Alert.alert("Success", response.message || "Profile updated successfully!");
     } catch (error: any) {
-      console.error("Failed to update profile:", error);
-      Alert.alert("Error", error.message || "Failed to update profile");
+      console.error("=== Profile Update Failed ===");
+      console.error("Error object:", JSON.stringify(error, null, 2));
+      console.error("Error message:", error.message);
+      console.error("Error status:", error.status);
+      console.error("Error errors:", JSON.stringify(error.errors, null, 2));
+
+      // Show detailed error message
+      const errorMessage = error.message || "Failed to update profile";
+      Alert.alert("Error", errorMessage);
     } finally {
       setIsSaving(false);
     }
@@ -398,41 +409,6 @@ export default function ProfileScreen() {
                   </XStack>
                 )}
               </YStack>
-
-              {/* Additional Info (Read-only) */}
-              {!isEditing && (
-                <>
-                  <YStack gap={8}>
-                    <Text fontSize={14} fontWeight="600" color="#333">
-                      Member Since
-                    </Text>
-                    <XStack alignItems="center" gap={12}>
-                      <View
-                        width={40}
-                        height={40}
-                        borderRadius={20}
-                        backgroundColor="#AF52DE20"
-                        alignItems="center"
-                        justifyContent="center"
-                      >
-                        <MapPin size={18} color="#AF52DE" />
-                      </View>
-                      <Text fontSize={15} color="#666" flex={1}>
-                        {user?.created_at
-                          ? new Date(user.created_at).toLocaleDateString(
-                              "en-MY",
-                              {
-                                day: "numeric",
-                                month: "long",
-                                year: "numeric",
-                              }
-                            )
-                          : "-"}
-                      </Text>
-                    </XStack>
-                  </YStack>
-                </>
-              )}
             </YStack>
           </Card>
 

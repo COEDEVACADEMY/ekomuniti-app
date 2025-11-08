@@ -1,26 +1,31 @@
-import { useEffect, useState } from "react";
-import { ScrollView, ActivityIndicator, RefreshControl } from "react-native";
-import { YStack, XStack, Card, Button, H5, Separator, Text } from "tamagui";
-import CustomHeader from "../../components/CustomHeader";
-import { StatCard, QuickActionCard, AnnouncementItem, EventCard } from "../../components/home";
 import {
-  Users,
+  Bell,
+  Calendar,
+  Clock,
   CreditCard,
   MessageCircle,
-  Calendar,
   TrendingUp,
-  Bell,
   UserCheck,
+  Users,
   UserX,
-  Clock,
 } from "@tamagui/lucide-icons";
-import { router } from "expo-router";
+import { router, useFocusEffect } from "expo-router";
+import React, { useCallback, useEffect, useState } from "react";
+import { ActivityIndicator, RefreshControl, ScrollView } from "react-native";
+import { Button, Card, H4, H6, Separator, Text, XStack, YStack } from "tamagui";
+import CustomHeader from "../../components/CustomHeader";
+import {
+  AnnouncementItem,
+  EventCard,
+  QuickActionCard,
+  StatCard,
+} from "../../components/home";
+import { ASSET_BASE_URL } from "../../config/api";
 import { AuthService } from "../../services/authService";
 import { MemberService } from "../../services/memberService";
-import { TokenStorage } from "../../utils/tokenStorage";
 import { User } from "../../types/auth";
 import { TotalMemberStats } from "../../types/member";
-import { ASSET_BASE_URL } from "../../config/api";
+import { TokenStorage } from "../../utils/tokenStorage";
 
 export default function HomeScreen() {
   const [user, setUser] = useState<User | null>(null);
@@ -34,12 +39,19 @@ export default function HomeScreen() {
     checkFirstVisit();
   }, []);
 
+  // Refresh data pengguna apabila skrin difokuskan
+  useFocusEffect(
+    useCallback(() => {
+      loadUserData();
+    }, [])
+  );
+
   const checkFirstVisit = async () => {
     const hasVisited = await TokenStorage.getHasVisitedHome();
     if (hasVisited) {
-      setSubtitle("Welcome Back");
+      setSubtitle("Selamat Datang Kembali");
     } else {
-      setSubtitle("Welcome");
+      setSubtitle("Selamat Datang");
       await TokenStorage.setHasVisitedHome(true);
     }
   };
@@ -52,39 +64,35 @@ export default function HomeScreen() {
     try {
       setIsLoading(true);
 
-      // Try to get user from storage first
       const cachedUser = await TokenStorage.getUser();
       if (cachedUser) {
         setUser(cachedUser);
       }
 
-      // Fetch fresh data from API (with auto-refresh on 401)
       const response = await AuthService.getMe();
       if (response.success) {
         setUser(response.data);
-        // Update cached user
         await TokenStorage.saveUser(response.data);
-        console.log("User data loaded successfully");
+        console.log("Data pengguna berjaya dimuat.");
       }
     } catch (error: any) {
-      console.error("Failed to load user data:", error);
+      console.error("Gagal memuat data pengguna:", error);
 
-      // Check if session expired (401)
-      if (error?.message?.includes("Session expired") || error?.status === 401) {
-        console.log("Session expired, redirecting to login...");
+      if (
+        error?.message?.includes("Session expired") ||
+        error?.status === 401
+      ) {
+        console.log("Sesi tamat, mengalihkan ke log masuk...");
         router.replace("/login");
         return;
       }
 
-      // For other errors, check if we have cached user
       const cachedUser = await TokenStorage.getUser();
       if (!cachedUser) {
-        // No cached user and API failed, redirect to login
-        console.log("No cached user, redirecting to login...");
+        console.log("Tiada data pengguna, mengalihkan ke log masuk...");
         router.replace("/login");
       } else {
-        console.log("Using cached user data (offline mode)");
-        // We have cached user, continue with that (offline mode)
+        console.log("Menggunakan data simpanan (mod luar talian)");
       }
     } finally {
       setIsLoading(false);
@@ -96,11 +104,10 @@ export default function HomeScreen() {
       const response = await MemberService.getTotalMembers();
       if (response.success) {
         setMemberStats(response.data);
-        console.log("Member stats loaded:", response.data);
+        console.log("Statistik ahli dimuat:", response.data);
       }
     } catch (error: any) {
-      console.error("Failed to load member stats:", error);
-      // Don't redirect, just show error or use default values
+      console.error("Gagal memuat statistik ahli:", error);
     }
   };
 
@@ -112,9 +119,16 @@ export default function HomeScreen() {
 
   if (isLoading && !user) {
     return (
-      <YStack flex={1} backgroundColor="#F5F5F5" justifyContent="center" alignItems="center">
+      <YStack
+        flex={1}
+        backgroundColor="#F5F5F5"
+        justifyContent="center"
+        alignItems="center"
+      >
         <ActivityIndicator size="large" color="#4A90E2" />
-        <Text marginTop={12} color="#666">Loading...</Text>
+        <Text marginTop={12} color="#666">
+          Memuatkan...
+        </Text>
       </YStack>
     );
   }
@@ -127,7 +141,7 @@ export default function HomeScreen() {
     <YStack flex={1} backgroundColor="#F5F5F5">
       <CustomHeader
         variant="withAvatar"
-        userName={user?.fullname || "User"}
+        userName={user?.fullname || "Pengguna"}
         subtitle={subtitle}
         avatarUrl={profileImageUrl}
       />
@@ -139,26 +153,27 @@ export default function HomeScreen() {
         }
       >
         <YStack padding={20} gap={20} paddingBottom={100}>
-
-          {/* Quick Stats Section */}
+          {/* Statistik Komuniti */}
           <YStack gap={12}>
-            <H5 fontWeight="600" color="#333">Community Overview</H5>
+            <H6 fontWeight="600" color="#333">
+              Gambaran Keseluruhan Komuniti
+            </H6>
             <XStack gap={12}>
               <StatCard
                 icon={Users}
                 iconColor="#4A90E2"
-                label="Total Members"
+                label="Jumlah Ahli"
                 value={memberStats?.total_member.toString() || "0"}
-                trend={`${memberStats?.total_active || 0} active`}
+                trend={`${memberStats?.total_active || 0} aktif`}
                 trendColor="#34C759"
                 TrendIcon={UserCheck}
               />
               <StatCard
                 icon={Clock}
                 iconColor="#FF9500"
-                label="Pending"
+                label="Tertunda"
                 value={memberStats?.total_pending.toString() || "0"}
-                trend="Need approval"
+                trend="Perlu kelulusan"
                 trendColor="#666"
               />
             </XStack>
@@ -166,38 +181,40 @@ export default function HomeScreen() {
               <StatCard
                 icon={UserCheck}
                 iconColor="#34C759"
-                label="Active"
+                label="Aktif"
                 value={memberStats?.total_active.toString() || "0"}
-                trend="Verified members"
+                trend="Ahli disahkan"
                 trendColor="#34C759"
                 TrendIcon={TrendingUp}
               />
               <StatCard
                 icon={UserX}
                 iconColor="#FF3B30"
-                label="Expired"
+                label="Tamat Tempoh"
                 value={memberStats?.total_expired.toString() || "0"}
-                trend="Need renewal"
+                trend="Perlu diperbaharui"
                 trendColor="#FF3B30"
               />
             </XStack>
           </YStack>
 
-          {/* Quick Actions */}
+          {/* Tindakan Pantas */}
           <YStack gap={12}>
-            <H5 fontWeight="600" color="#333">Quick Actions</H5>
+            <H6 fontWeight="600" color="#333">
+              Tindakan Pantas
+            </H6>
             <XStack gap={12}>
               <QuickActionCard
                 icon={Users}
                 iconColor="#4A90E2"
-                label="Members"
+                label="Ahli"
                 onPress={() => router.push("/(tabs)/members")}
               />
               <QuickActionCard
                 icon={CreditCard}
                 iconColor="#34C759"
-                label="Payments"
-                onPress={() => console.log("Payments")}
+                label="Pembayaran"
+                onPress={() => console.log("Pembayaran")}
               />
             </XStack>
 
@@ -205,29 +222,31 @@ export default function HomeScreen() {
               <QuickActionCard
                 icon={MessageCircle}
                 iconColor="#FF9500"
-                label="Announce"
-                onPress={() => console.log("Announcements")}
+                label="Pengumuman"
+                onPress={() => console.log("Pengumuman")}
               />
               <QuickActionCard
                 icon={Calendar}
                 iconColor="#AF52DE"
-                label="Activities"
-                onPress={() => console.log("Activities")}
+                label="Aktiviti"
+                onPress={() => console.log("Aktiviti")}
               />
             </XStack>
           </YStack>
 
-          {/* Recent Announcements */}
+          {/* Pengumuman Terkini */}
           <YStack gap={12}>
             <XStack justifyContent="space-between" alignItems="center">
-              <H5 fontWeight="600" color="#333">Recent Announcements</H5>
+              <H6 fontWeight="600" color="#333">
+                Pengumuman Terkini
+              </H6>
               <Button
                 size="$2"
                 chromeless
                 color="#4A90E2"
                 onPress={() => router.push("/announcements")}
               >
-                See All
+                Lihat Semua
               </Button>
             </XStack>
 
@@ -244,9 +263,9 @@ export default function HomeScreen() {
                 <AnnouncementItem
                   icon={Bell}
                   iconColor="#4A90E2"
-                  title="Annual General Meeting 2024"
-                  description="Join us for our AGM on March 15th at Community Hall. All members are encouraged to attend."
-                  time="2 hours ago"
+                  title="Mesyuarat Agung Tahunan 2024"
+                  description="Sertai kami untuk AGM pada 15 Mac di Dewan Komuniti. Semua ahli dijemput hadir."
+                  time="2 jam yang lalu"
                   onPress={() => router.push("/announcements/1")}
                 />
 
@@ -255,50 +274,51 @@ export default function HomeScreen() {
                 <AnnouncementItem
                   icon={Bell}
                   iconColor="#34C759"
-                  title="Monthly Dues Reminder"
-                  description="Friendly reminder that monthly dues are due by the end of this week."
-                  time="1 day ago"
+                  title="Peringatan Yuran Bulanan"
+                  description="Peringatan mesra bahawa bayaran yuran bulanan perlu dijelaskan sebelum hujung minggu ini."
+                  time="1 hari yang lalu"
                   onPress={() => router.push("/announcements/2")}
                 />
               </YStack>
             </Card>
           </YStack>
 
-          {/* Upcoming Events */}
+          {/* Acara Akan Datang */}
           <YStack gap={12}>
             <XStack justifyContent="space-between" alignItems="center">
-              <H5 fontWeight="600" color="#333">Upcoming Events</H5>
+              <H6 fontWeight="600" color="#333">
+                Acara Akan Datang
+              </H6>
               <Button
                 size="$2"
                 chromeless
                 color="#4A90E2"
                 onPress={() => router.push("/events")}
               >
-                See All
+                Lihat Semua
               </Button>
             </XStack>
 
             <EventCard
               date="15"
-              month="MAR"
-              title="Community Sports Day"
-              time="Saturday, 9:00 AM - 5:00 PM"
-              location="Community Sports Complex"
+              month="MAC"
+              title="Hari Sukan Komuniti"
+              time="Sabtu, 9:00 Pagi - 5:00 Petang"
+              location="Kompleks Sukan Komuniti"
               color="#FF9500"
               onPress={() => router.push("/events/1")}
             />
 
             <EventCard
               date="22"
-              month="MAR"
-              title="Financial Planning Workshop"
-              time="Friday, 2:00 PM - 4:00 PM"
-              location="Online Event"
+              month="MAC"
+              title="Bengkel Perancangan Kewangan"
+              time="Jumaat, 2:00 Petang - 4:00 Petang"
+              location="Acara Dalam Talian"
               color="#AF52DE"
               onPress={() => router.push("/events/2")}
             />
           </YStack>
-
         </YStack>
       </ScrollView>
     </YStack>

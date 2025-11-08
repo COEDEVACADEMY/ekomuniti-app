@@ -1,17 +1,14 @@
 import {
   Bell,
   ChevronRight,
-  Globe,
   HelpCircle,
   Info,
-  Lock,
   LogOut,
   Mail,
-  Shield,
   User,
 } from "@tamagui/lucide-icons";
-import { router } from "expo-router";
-import React, { useEffect, useState } from "react";
+import { router, useFocusEffect } from "expo-router";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -110,6 +107,13 @@ export default function SettingsScreen() {
   useEffect(() => {
     loadUserData();
   }, []);
+
+  // Refresh user data when screen is focused
+  useFocusEffect(
+    useCallback(() => {
+      loadUserData();
+    }, [])
+  );
 
   const loadUserData = async () => {
     try {
@@ -262,13 +266,6 @@ export default function SettingsScreen() {
             subtitle="Tukar email atau kata laluan"
             onPress={() => console.log("Email & password")}
           />
-          <Separator />
-          <SettingItem
-            icon={<Shield size={20} color="#1569a0" />}
-            title="Keselamatan"
-            subtitle="Autentikasi dua faktor"
-            onPress={() => console.log("Security")}
-          />
         </View>
 
         {/* Preferences Section */}
@@ -279,20 +276,6 @@ export default function SettingsScreen() {
             title="Notifikasi"
             subtitle="Urus notifikasi aplikasi"
             onPress={() => console.log("Notifications")}
-          />
-          <Separator />
-          <SettingItem
-            icon={<Lock size={20} color="#1569a0" />}
-            title="Privasi"
-            subtitle="Tetapan privasi dan data"
-            onPress={() => console.log("Privacy")}
-          />
-          <Separator />
-          <SettingItem
-            icon={<Globe size={20} color="#1569a0" />}
-            title="Bahasa"
-            subtitle="Bahasa Malaysia"
-            onPress={() => router.push("/language")}
           />
         </View>
 

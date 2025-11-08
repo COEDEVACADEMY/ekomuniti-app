@@ -7,8 +7,10 @@ import {
   RefreshTokenResponse,
   ProfileUpdatePayload,
 } from "../types/auth";
-import { API_BASE_URL, API_CONFIG } from "../config/api";
+import { API_CONFIG } from "../config/api";
+import { API } from "../config/url";
 import { TokenStorage } from "../utils/tokenStorage";
+import { sanitizeErrorMessage, logError } from "../utils/errorHandler";
 
 export class AuthService {
   /**
@@ -22,10 +24,10 @@ export class AuthService {
     password: string
   ): Promise<LoginResponse> {
     try {
-      console.log("Attempting login to:", `${API_BASE_URL}/login`);
+      console.log("Attempting login to:", API.AUTH.login);
       console.log("API Config:", API_CONFIG);
 
-      const response = await fetch(`${API_BASE_URL}/login`, {
+      const response = await fetch(API.AUTH.login, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -38,29 +40,39 @@ export class AuthService {
       });
 
       const data = await response.json();
-      console.log("Login response:", data);
 
       if (!response.ok) {
-        // Handle error response
+        // Log error for debugging (only in dev)
+        logError("AuthService.login", { status: response.status, data });
+
+        // Sanitize error message
+        const sanitizedMessage = sanitizeErrorMessage(
+          data.message || "Login gagal",
+          response.status
+        );
+
         throw {
           success: false,
-          message: data.message || "Login failed",
+          message: sanitizedMessage,
           errors: data.errors,
+          status: response.status,
         } as ApiError;
       }
 
       // Check if response is successful
       if (!data.success) {
+        logError("AuthService.login", data);
+
         throw {
           success: false,
-          message: data.message || "Login failed",
+          message: sanitizeErrorMessage(data.message || "Login gagal"),
           errors: data.errors,
         } as ApiError;
       }
 
       return data as LoginResponse;
     } catch (error) {
-      console.error("Login error:", error);
+      logError("AuthService.login (catch)", error);
 
       // Handle network errors or other exceptions
       if ((error as ApiError).success === false) {
@@ -70,7 +82,7 @@ export class AuthService {
       // Network error
       throw {
         success: false,
-        message: "Network error. Please check your connection and API URL configuration.",
+        message: "Tidak dapat terhubung ke server. Periksa koneksi internet Anda.",
       } as ApiError;
     }
   }
@@ -94,9 +106,9 @@ export class AuthService {
         } as ApiError;
       }
 
-      console.log("Fetching user profile from:", `${API_BASE_URL}/me`);
+      console.log("Fetching user profile from:", API.AUTH.getMe);
 
-      const response = await fetch(`${API_BASE_URL}/me`, {
+      const response = await fetch(API.AUTH.getMe, {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
@@ -106,50 +118,55 @@ export class AuthService {
       });
 
       const data = await response.json();
-      console.log("Get me response:", data);
 
       // Check for 401 Unauthorized - token expired
       if (response.status === 401 && !skipRefresh) {
-        console.log("Token expired (401), attempting auto-refresh...");
+        logError("AuthService.getMe - Token expired", { status: 401 });
 
         try {
           // Refresh token
           const refreshResponse = await this.refreshToken(authToken);
-          console.log("Token auto-refreshed successfully, retrying getMe...");
 
           // Retry getMe with new token (skip refresh to prevent infinite loop)
           return await this.getMe(refreshResponse.data.token, true);
         } catch (refreshError) {
-          console.error("Auto-refresh failed:", refreshError);
+          logError("AuthService.getMe - Auto-refresh failed", refreshError);
           // Clear auth and throw error
           await TokenStorage.clearAuth();
           throw {
             success: false,
-            message: "Session expired. Please login again.",
+            message: "Sesi Anda telah berakhir. Silakan login kembali.",
           } as ApiError;
         }
       }
 
       if (!response.ok) {
+        logError("AuthService.getMe", { status: response.status, data });
+
         throw {
           success: false,
-          message: data.message || "Failed to fetch user profile",
+          message: sanitizeErrorMessage(
+            data.message || "Gagal mengambil profil pengguna",
+            response.status
+          ),
           errors: data.errors,
           status: response.status,
         } as ApiError;
       }
 
       if (!data.success) {
+        logError("AuthService.getMe", data);
+
         throw {
           success: false,
-          message: data.message || "Failed to fetch user profile",
+          message: sanitizeErrorMessage(data.message || "Gagal mengambil profil pengguna"),
           errors: data.errors,
         } as ApiError;
       }
 
       return data as GetMeResponse;
     } catch (error) {
-      console.error("Get me error:", error);
+      logError("AuthService.getMe (catch)", error);
 
       if ((error as ApiError).success === false) {
         throw error;
@@ -157,7 +174,7 @@ export class AuthService {
 
       throw {
         success: false,
-        message: "Network error. Please check your connection.",
+        message: "Tidak dapat terhubung ke server. Periksa koneksi internet Anda.",
       } as ApiError;
     }
   }
@@ -179,9 +196,9 @@ export class AuthService {
         } as ApiError;
       }
 
-      console.log("Refreshing token from:", `${API_BASE_URL}/refresh-token`);
+      console.log("Refreshing token from:", API.AUTH.refreshToken);
 
-      const response = await fetch(`${API_BASE_URL}/refresh-token`, {
+      const response = await fetch(API.AUTH.refreshToken, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -191,20 +208,27 @@ export class AuthService {
       });
 
       const data = await response.json();
-      console.log("Refresh token response:", data);
 
       if (!response.ok) {
+        logError("AuthService.refreshToken", { status: response.status, data });
+
         throw {
           success: false,
-          message: data.message || "Failed to refresh token",
+          message: sanitizeErrorMessage(
+            data.message || "Gagal memperbarui token",
+            response.status
+          ),
           errors: data.errors,
+          status: response.status,
         } as ApiError;
       }
 
       if (!data.success) {
+        logError("AuthService.refreshToken", data);
+
         throw {
           success: false,
-          message: data.message || "Failed to refresh token",
+          message: sanitizeErrorMessage(data.message || "Gagal memperbarui token"),
           errors: data.errors,
         } as ApiError;
       }
@@ -213,12 +237,11 @@ export class AuthService {
       if (data.data) {
         await TokenStorage.saveToken(data.data.token);
         await TokenStorage.saveUser(data.data.user);
-        console.log("New token saved successfully");
       }
 
       return data as RefreshTokenResponse;
     } catch (error) {
-      console.error("Refresh token error:", error);
+      logError("AuthService.refreshToken (catch)", error);
 
       if ((error as ApiError).success === false) {
         throw error;
@@ -226,7 +249,7 @@ export class AuthService {
 
       throw {
         success: false,
-        message: "Network error. Please check your connection.",
+        message: "Tidak dapat terhubung ke server. Periksa koneksi internet Anda.",
       } as ApiError;
     }
   }
@@ -251,9 +274,9 @@ export class AuthService {
         };
       }
 
-      console.log("Logging out from:", `${API_BASE_URL}/logout`);
+      console.log("Logging out from:", API.AUTH.logout);
 
-      const response = await fetch(`${API_BASE_URL}/logout`, {
+      const response = await fetch(API.AUTH.logout, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -306,7 +329,7 @@ export class AuthService {
         } as ApiError;
       }
 
-      console.log("Attempting to update profile to:", `${API_BASE_URL}/profile`);
+      console.log("Attempting to update profile to:", API.AUTH.updateProfile);
 
       const formData = new FormData();
 
@@ -326,7 +349,7 @@ export class AuthService {
         }
       });
 
-      const response = await fetch(`${API_BASE_URL}/profile`, {
+      const response = await fetch(API.AUTH.updateProfile, {
         method: "POST",
         headers: {
           Accept: "application/json",
@@ -337,20 +360,52 @@ export class AuthService {
       });
 
       const data = await response.json();
-      console.log("Update profile response:", data);
 
       if (!response.ok) {
+        logError("AuthService.updateProfile", { status: response.status, data });
+
+        // Handle 422 validation errors from Laravel
+        if (response.status === 422) {
+          // Laravel returns validation errors directly as object
+          // Convert to readable message
+          const errorMessages: string[] = [];
+          if (typeof data === 'object' && data !== null) {
+            Object.keys(data).forEach(field => {
+              const messages = data[field];
+              if (Array.isArray(messages)) {
+                errorMessages.push(`${field}: ${messages.join(', ')}`);
+              }
+            });
+          }
+
+          throw {
+            success: false,
+            message: errorMessages.length > 0
+              ? `Validasi gagal:\n${errorMessages.join('\n')}`
+              : "Data yang Anda masukkan tidak valid.",
+            errors: data,
+            status: 422,
+          } as ApiError;
+        }
+
+        // Handle other errors
         throw {
           success: false,
-          message: data.message || "Failed to update profile",
-          errors: data.errors,
+          message: sanitizeErrorMessage(
+            data.message || "Gagal memperbarui profil",
+            response.status
+          ),
+          errors: data.errors || data,
+          status: response.status,
         } as ApiError;
       }
 
       if (!data.success) {
+        logError("AuthService.updateProfile", data);
+
         throw {
           success: false,
-          message: data.message || "Failed to update profile",
+          message: sanitizeErrorMessage(data.message || "Gagal memperbarui profil"),
           errors: data.errors,
         } as ApiError;
       }
@@ -362,13 +417,13 @@ export class AuthService {
 
       return data as GetMeResponse;
     } catch (error) {
-      console.error("Update profile error:", error);
+      logError("AuthService.updateProfile (catch)", error);
       if ((error as ApiError).success === false) {
         throw error;
       }
       throw {
         success: false,
-        message: "Network error. Please check your connection.",
+        message: "Tidak dapat terhubung ke server. Periksa koneksi internet Anda.",
       } as ApiError;
     }
   }

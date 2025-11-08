@@ -1,15 +1,13 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { ScrollView, RefreshControl, ActivityIndicator, Alert } from "react-native";
-import { YStack, XStack, H5, Button, Text } from "tamagui";
+import { YStack, H5, Button, Text } from "tamagui";
 import { router } from "expo-router";
 import CustomHeader from "../../components/CustomHeader";
 import { MemberCard, SearchBar, FilterTabs } from "../../components/members";
-import { StatCard } from "../../components/home";
-import { Users, UserCheck, UserX, UserPlus, Clock } from "@tamagui/lucide-icons";
+import { Users, UserPlus } from "@tamagui/lucide-icons";
 import { MemberService } from "../../services/memberService";
-import { Member, TotalMemberStats } from "../../types/member";
+import { Member, getMemberFullname, getMemberEmail, getMemberPhone } from "../../types/member";
 import React from "react";
-import { ASSET_BASE_URL } from "../../config/api";
 
 type FilterType = "All" | "Active" | "Inactive" | "Pending";
 
@@ -17,56 +15,31 @@ export default function MembersScreen() {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeFilter, setActiveFilter] = useState<FilterType>("All");
   const [members, setMembers] = useState<Member[]>([]);
-  const [memberStats, setMemberStats] = useState<TotalMemberStats | null>(null);
+  const [allMembers, setAllMembers] = useState<Member[]>([]); // Store all members for filtering
   const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
 
   useEffect(() => {
-    loadData();
-  }, []);
-
-  useEffect(() => {
-    // Reload data when search or filter changes
     loadMembers();
-  }, [searchQuery, activeFilter, currentPage]);
-
-  const loadData = async () => {
-    await Promise.all([loadMemberStats(), loadMembers()]);
-  };
-
-  const loadMemberStats = async () => {
-    try {
-      const response = await MemberService.getTotalMembers();
-      if (response.success) {
-        setMemberStats(response.data);
-      }
-    } catch (error: any) {
-      console.error("Failed to load member stats:", error);
-
-      if (error?.message?.includes("Session expired")) {
-        router.replace("/login");
-      }
-    }
-  };
+  }, []);
 
   const loadMembers = async () => {
     try {
       setIsLoading(true);
 
-      const response = await MemberService.getMembers(
-        currentPage,
-        10,
-        searchQuery.trim() || undefined
-      );
+      const response = await MemberService.getMembers();
 
-      if (response.success) {
-        setMembers(response.data);
-        setTotalPages(response.pagination.last_page);
+      console.log("Members API Response:", JSON.stringify(response, null, 2));
+
+      if (response.success && Array.isArray(response.data)) {
+        setAllMembers(response.data);
+      } else {
+        console.warn("Invalid response format:", response);
+        setAllMembers([]);
       }
     } catch (error: any) {
       console.error("Failed to load members:", error);
+      setAllMembers([]);
 
       if (error?.message?.includes("Session expired")) {
         router.replace("/login");
@@ -78,31 +51,53 @@ export default function MembersScreen() {
     }
   };
 
+  const applyFilters = useCallback(() => {
+    let filtered = [...allMembers];
+
+    // Apply search filter
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter((member) => {
+        const fullname = getMemberFullname(member).toLowerCase();
+        const email = getMemberEmail(member).toLowerCase();
+        const phone = getMemberPhone(member).toLowerCase();
+        return fullname.includes(query) || email.includes(query) || phone.includes(query);
+      });
+    }
+
+    // Apply status filter
+    if (activeFilter !== "All") {
+      filtered = filtered.filter((member) => {
+        const status = member.status_approval;
+        if (activeFilter === "Active") return status === "APPROVED";
+        if (activeFilter === "Inactive") return status === "REJECTED";
+        if (activeFilter === "Pending") return status === "PENDING" || status === "WAITING";
+        return true;
+      });
+    }
+
+    setMembers(filtered);
+  }, [allMembers, searchQuery, activeFilter]);
+
+  // Apply filters when search query or active filter changes
+  useEffect(() => {
+    applyFilters();
+  }, [applyFilters]);
+
   const onRefresh = async () => {
     setRefreshing(true);
-    setCurrentPage(1);
-    await loadData();
+    await loadMembers();
     setRefreshing(false);
   };
 
-  // Filter members based on local filter (after fetching from API)
-  const filteredMembers = members.filter((member) => {
-    if (activeFilter === "All") return true;
-    if (activeFilter === "Active") return member.user.status === "ACTIVE";
-    if (activeFilter === "Inactive") return member.user.status !== "ACTIVE";
-    if (activeFilter === "Pending") return member.subscribe_status === "UNPAID";
-    return true;
-  });
-
-  const getMemberStatus = (member: Member): "Active" | "Inactive" => {
-    return member.user.status === "ACTIVE" ? "Active" : "Inactive";
+  const getDisplayStatus = (member: Member): "Active" | "Inactive" => {
+    return member.status_approval === "APPROVED" ? "Active" : "Inactive";
   };
 
-  const getMemberRole = (member: Member): string => {
-    if (member.user.is_verified === 1) {
-      return "Verified Member";
-    }
-    return "Pending Verification";
+  const getDisplayRole = (member: Member): string => {
+    if (member.status_approval === "APPROVED") return "Verified Member";
+    if (member.status_approval === "PENDING" || member.status_approval === "WAITING") return "Pending Verification";
+    return "Inactive Member";
   };
 
   return (
@@ -120,39 +115,6 @@ export default function MembersScreen() {
         }
       >
         <YStack padding={20} gap={20} paddingBottom={100}>
-
-          {/* Stats Section */}
-          <YStack gap={12}>
-            <XStack gap={12}>
-              <StatCard
-                icon={Users}
-                iconColor="#4A90E2"
-                label="Total"
-                value={memberStats?.total_member.toString() || "0"}
-              />
-              <StatCard
-                icon={UserCheck}
-                iconColor="#34C759"
-                label="Active"
-                value={memberStats?.total_active.toString() || "0"}
-              />
-            </XStack>
-            <XStack gap={12}>
-              <StatCard
-                icon={Clock}
-                iconColor="#FF9500"
-                label="Pending"
-                value={memberStats?.total_pending.toString() || "0"}
-              />
-              <StatCard
-                icon={UserX}
-                iconColor="#FF3B30"
-                label="Expired"
-                value={memberStats?.total_expired.toString() || "0"}
-              />
-            </XStack>
-          </YStack>
-
           {/* Add Member Button */}
           <Button
             backgroundColor="#4A90E2"
@@ -160,7 +122,7 @@ export default function MembersScreen() {
             borderRadius={12}
             fontWeight="600"
             icon={<UserPlus size={20} color="white" />}
-            onPress={() => console.log("Add member")}
+            onPress={() => router.push("/members/create")}
             pressStyle={{ scale: 0.98 }}
             shadowColor="#4A90E2"
             shadowOffset={{ width: 0, height: 2 }}
@@ -186,7 +148,7 @@ export default function MembersScreen() {
           {/* Members List */}
           <YStack gap={12}>
             <H5 fontWeight="600" color="#333">
-              {filteredMembers.length} Members Found
+              {members.length} Members Found
             </H5>
 
             {isLoading && !refreshing ? (
@@ -199,7 +161,7 @@ export default function MembersScreen() {
                 <ActivityIndicator size="large" color="#4A90E2" />
                 <Text color="#999">Loading members...</Text>
               </YStack>
-            ) : filteredMembers.length === 0 ? (
+            ) : members.length === 0 ? (
               <YStack
                 padding={40}
                 alignItems="center"
@@ -210,28 +172,25 @@ export default function MembersScreen() {
                 <H5 color="#999">No members found</H5>
               </YStack>
             ) : (
-              filteredMembers.map((member) => (
+              members.map((member) => (
                 <MemberCard
-                  key={member.id_user}
-                  name={member.user.fullname}
-                  email={member.user.email}
-                  phone={member.user.phone_number}
-                  role={getMemberRole(member)}
-                  status={getMemberStatus(member)}
-                  avatarUrl={member.user.photo ? `${ASSET_BASE_URL}/Profil/${member.user.photo}` : `https://api.dicebear.com/7.x/avataaars/png?seed=${member.user.fullname}`}
-                  onPress={() => router.push(`/members/${member.id_detail_manpower}`)}
+                  key={member.id}
+                  name={getMemberFullname(member)}
+                  email={getMemberEmail(member)}
+                  phone={getMemberPhone(member)}
+                  role={getDisplayRole(member)}
+                  status={getDisplayStatus(member)}
+                  avatarUrl={`https://api.dicebear.com/7.x/avataaars/png?seed=${getMemberFullname(member)}`}
+                  onPress={() => router.push(`/members/edit/${member.id_detail_manpower}`)}
                 />
               ))
             )}
 
-            {/* Pagination Info */}
-            {!isLoading && filteredMembers.length > 0 && (
+            {/* Summary Info */}
+            {!isLoading && members.length > 0 && (
               <YStack alignItems="center" paddingVertical={16}>
                 <Text fontSize={14} color="#666">
-                  Page {currentPage} of {totalPages}
-                </Text>
-                <Text fontSize={12} color="#999" marginTop={4}>
-                  Showing {filteredMembers.length} of {memberStats?.total_member || 0} members
+                  Showing {members.length} of {allMembers.length} total members
                 </Text>
               </YStack>
             )}
