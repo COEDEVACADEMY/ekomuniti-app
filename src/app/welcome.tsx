@@ -19,10 +19,10 @@ export default function WelcomeScreen() {
 
         <YStack gap={12} alignItems="center" paddingHorizontal={20}>
           <H2 fontSize={28} fontWeight="700" color="#1569a0" textAlign="center">
-            Urus Keahlian Lebih Mudah,{"\n"}Semua Dalam Satu Platform
+            Manage Membership Easier,{"\n"}All in One Platform
           </H2>
           <Text fontSize={16} color="#666" textAlign="center" lineHeight={24}>
-            Satu platform digital untuk persatuan & komuniti mengurus ahli, aktiviti, dan komunikasi dengan lebih teratur.
+            A digital platform for associations & communities to manage members, activities, and communication more organized.
           </Text>
         </YStack>
       </YStack>
@@ -39,7 +39,7 @@ export default function WelcomeScreen() {
           onPress={() => router.push("/login")}
           pressStyle={{ scale: 0.98, backgroundColor: "#0f5580" }}
         >
-          Gabung Sekarang
+          Get Started
         </Button>
 
         <Button
@@ -52,7 +52,7 @@ export default function WelcomeScreen() {
           onPress={() => router.push("/register")}
           pressStyle={{ opacity: 0.7 }}
         >
-          Belum ada akaun? Daftar
+          Don't have an account? Sign Up
         </Button>
       </YStack>
     </YStack>

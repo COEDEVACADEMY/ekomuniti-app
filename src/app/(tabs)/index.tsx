@@ -49,9 +49,9 @@ export default function HomeScreen() {
   const checkFirstVisit = async () => {
     const hasVisited = await TokenStorage.getHasVisitedHome();
     if (hasVisited) {
-      setSubtitle("Selamat Datang Kembali");
+      setSubtitle("Welcome Back");
     } else {
-      setSubtitle("Selamat Datang");
+      setSubtitle("Welcome");
       await TokenStorage.setHasVisitedHome(true);
     }
   };
@@ -73,26 +73,26 @@ export default function HomeScreen() {
       if (response.success) {
         setUser(response.data);
         await TokenStorage.saveUser(response.data);
-        console.log("Data pengguna berjaya dimuat.");
+        console.log("User data loaded successfully.");
       }
     } catch (error: any) {
-      console.error("Gagal memuat data pengguna:", error);
+      console.error("Failed to load user data:", error);
 
       if (
         error?.message?.includes("Session expired") ||
         error?.status === 401
       ) {
-        console.log("Sesi tamat, mengalihkan ke log masuk...");
+        console.log("Session expired, redirecting to login...");
         router.replace("/login");
         return;
       }
 
       const cachedUser = await TokenStorage.getUser();
       if (!cachedUser) {
-        console.log("Tiada data pengguna, mengalihkan ke log masuk...");
+        console.log("No user data, redirecting to login...");
         router.replace("/login");
       } else {
-        console.log("Menggunakan data simpanan (mod luar talian)");
+        console.log("Using cached data (offline mode)");
       }
     } finally {
       setIsLoading(false);
@@ -104,10 +104,10 @@ export default function HomeScreen() {
       const response = await MemberService.getTotalMembers();
       if (response.success) {
         setMemberStats(response.data);
-        console.log("Statistik ahli dimuat:", response.data);
+        console.log("Member statistics loaded:", response.data);
       }
     } catch (error: any) {
-      console.error("Gagal memuat statistik ahli:", error);
+      console.error("Failed to load member statistics:", error);
     }
   };
 
@@ -127,7 +127,7 @@ export default function HomeScreen() {
       >
         <ActivityIndicator size="large" color="#4A90E2" />
         <Text marginTop={12} color="#666">
-          Memuatkan...
+          Loading...
         </Text>
       </YStack>
     );
@@ -141,7 +141,7 @@ export default function HomeScreen() {
     <YStack flex={1} backgroundColor="#F5F5F5">
       <CustomHeader
         variant="withAvatar"
-        userName={user?.fullname || "Pengguna"}
+        userName={user?.fullname || "User"}
         subtitle={subtitle}
         avatarUrl={profileImageUrl}
       />
@@ -153,27 +153,27 @@ export default function HomeScreen() {
         }
       >
         <YStack padding={20} gap={20} paddingBottom={100}>
-          {/* Statistik Komuniti */}
+          {/* Community Statistics */}
           <YStack gap={12}>
             <H6 fontWeight="600" color="#333">
-              Gambaran Keseluruhan Komuniti
+              Community Overview
             </H6>
             <XStack gap={12}>
               <StatCard
                 icon={Users}
                 iconColor="#4A90E2"
-                label="Jumlah Ahli"
+                label="Total Members"
                 value={memberStats?.total_member.toString() || "0"}
-                trend={`${memberStats?.total_active || 0} aktif`}
+                trend={`${memberStats?.total_active || 0} active`}
                 trendColor="#34C759"
                 TrendIcon={UserCheck}
               />
               <StatCard
                 icon={Clock}
                 iconColor="#FF9500"
-                label="Tertunda"
+                label="Pending"
                 value={memberStats?.total_pending.toString() || "0"}
-                trend="Perlu kelulusan"
+                trend="Need approval"
                 trendColor="#666"
               />
             </XStack>
@@ -181,40 +181,40 @@ export default function HomeScreen() {
               <StatCard
                 icon={UserCheck}
                 iconColor="#34C759"
-                label="Aktif"
+                label="Active"
                 value={memberStats?.total_active.toString() || "0"}
-                trend="Ahli disahkan"
+                trend="Verified members"
                 trendColor="#34C759"
                 TrendIcon={TrendingUp}
               />
               <StatCard
                 icon={UserX}
                 iconColor="#FF3B30"
-                label="Tamat Tempoh"
+                label="Expired"
                 value={memberStats?.total_expired.toString() || "0"}
-                trend="Perlu diperbaharui"
+                trend="Need renewal"
                 trendColor="#FF3B30"
               />
             </XStack>
           </YStack>
 
-          {/* Tindakan Pantas */}
+          {/* Quick Actions */}
           <YStack gap={12}>
             <H6 fontWeight="600" color="#333">
-              Tindakan Pantas
+              Quick Actions
             </H6>
             <XStack gap={12}>
               <QuickActionCard
                 icon={Users}
                 iconColor="#4A90E2"
-                label="Ahli"
+                label="Members"
                 onPress={() => router.push("/(tabs)/members")}
               />
               <QuickActionCard
                 icon={CreditCard}
                 iconColor="#34C759"
-                label="Pembayaran"
-                onPress={() => console.log("Pembayaran")}
+                label="Payments"
+                onPress={() => console.log("Payments")}
               />
             </XStack>
 
@@ -222,23 +222,23 @@ export default function HomeScreen() {
               <QuickActionCard
                 icon={MessageCircle}
                 iconColor="#FF9500"
-                label="Pengumuman"
-                onPress={() => console.log("Pengumuman")}
+                label="Announcements"
+                onPress={() => console.log("Announcements")}
               />
               <QuickActionCard
                 icon={Calendar}
                 iconColor="#AF52DE"
-                label="Aktiviti"
-                onPress={() => console.log("Aktiviti")}
+                label="Activities"
+                onPress={() => console.log("Activities")}
               />
             </XStack>
           </YStack>
 
-          {/* Pengumuman Terkini */}
+          {/* Latest Announcements */}
           <YStack gap={12}>
             <XStack justifyContent="space-between" alignItems="center">
               <H6 fontWeight="600" color="#333">
-                Pengumuman Terkini
+                Latest Announcements
               </H6>
               <Button
                 size="$2"
@@ -246,7 +246,7 @@ export default function HomeScreen() {
                 color="#4A90E2"
                 onPress={() => router.push("/announcements")}
               >
-                Lihat Semua
+                View All
               </Button>
             </XStack>
 
@@ -263,9 +263,9 @@ export default function HomeScreen() {
                 <AnnouncementItem
                   icon={Bell}
                   iconColor="#4A90E2"
-                  title="Mesyuarat Agung Tahunan 2024"
-                  description="Sertai kami untuk AGM pada 15 Mac di Dewan Komuniti. Semua ahli dijemput hadir."
-                  time="2 jam yang lalu"
+                  title="Annual General Meeting 2024"
+                  description="Join us for AGM on March 15 at Community Hall. All members are invited to attend."
+                  time="2 hours ago"
                   onPress={() => router.push("/announcements/1")}
                 />
 
@@ -274,20 +274,20 @@ export default function HomeScreen() {
                 <AnnouncementItem
                   icon={Bell}
                   iconColor="#34C759"
-                  title="Peringatan Yuran Bulanan"
-                  description="Peringatan mesra bahawa bayaran yuran bulanan perlu dijelaskan sebelum hujung minggu ini."
-                  time="1 hari yang lalu"
+                  title="Monthly Fee Reminder"
+                  description="Friendly reminder that monthly fee payment is due before the end of this week."
+                  time="1 day ago"
                   onPress={() => router.push("/announcements/2")}
                 />
               </YStack>
             </Card>
           </YStack>
 
-          {/* Acara Akan Datang */}
+          {/* Upcoming Events */}
           <YStack gap={12}>
             <XStack justifyContent="space-between" alignItems="center">
               <H6 fontWeight="600" color="#333">
-                Acara Akan Datang
+                Upcoming Events
               </H6>
               <Button
                 size="$2"
@@ -295,26 +295,26 @@ export default function HomeScreen() {
                 color="#4A90E2"
                 onPress={() => router.push("/events")}
               >
-                Lihat Semua
+                View All
               </Button>
             </XStack>
 
             <EventCard
               date="15"
-              month="MAC"
-              title="Hari Sukan Komuniti"
-              time="Sabtu, 9:00 Pagi - 5:00 Petang"
-              location="Kompleks Sukan Komuniti"
+              month="MAR"
+              title="Community Sports Day"
+              time="Saturday, 9:00 AM - 5:00 PM"
+              location="Community Sports Complex"
               color="#FF9500"
               onPress={() => router.push("/events/1")}
             />
 
             <EventCard
               date="22"
-              month="MAC"
-              title="Bengkel Perancangan Kewangan"
-              time="Jumaat, 2:00 Petang - 4:00 Petang"
-              location="Acara Dalam Talian"
+              month="MAR"
+              title="Financial Planning Workshop"
+              time="Friday, 2:00 PM - 4:00 PM"
+              location="Online Event"
               color="#AF52DE"
               onPress={() => router.push("/events/2")}
             />

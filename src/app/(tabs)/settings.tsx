@@ -128,15 +128,15 @@ export default function SettingsScreen() {
 
   const handleLogout = () => {
     Alert.alert(
-      "Log Keluar",
-      "Adakah anda pasti mahu log keluar?",
+      "Logout",
+      "Are you sure you want to logout?",
       [
         {
-          text: "Batal",
+          text: "Cancel",
           style: "cancel",
         },
         {
-          text: "Log Keluar",
+          text: "Logout",
           style: "destructive",
           onPress: async () => {
             try {
@@ -149,7 +149,7 @@ export default function SettingsScreen() {
 
               // Show success message
               Alert.alert(
-                "Berjaya",
+                "Success",
                 response.message || "Logout successful!",
                 [
                   {
@@ -251,48 +251,48 @@ export default function SettingsScreen() {
 
       <ScrollView showsVerticalScrollIndicator={false}>
         {/* Account Section */}
-        <SectionHeader title="Akaun" />
+        <SectionHeader title="Account" />
         <View backgroundColor="white">
           <SettingItem
             icon={<User size={20} color="#1569a0" />}
-            title="Maklumat Peribadi"
-            subtitle="Nama, telefon, alamat"
+            title="Personal Information"
+            subtitle="Name, phone, address"
             onPress={() => router.push("/profile")}
           />
           <Separator />
           <SettingItem
             icon={<Mail size={20} color="#1569a0" />}
-            title="Email & Kata Laluan"
-            subtitle="Tukar email atau kata laluan"
+            title="Email & Password"
+            subtitle="Change email or password"
             onPress={() => console.log("Email & password")}
           />
         </View>
 
         {/* Preferences Section */}
-        <SectionHeader title="Tetapan" />
+        <SectionHeader title="Settings" />
         <View backgroundColor="white">
           <SettingItem
             icon={<Bell size={20} color="#1569a0" />}
-            title="Notifikasi"
-            subtitle="Urus notifikasi aplikasi"
+            title="Notifications"
+            subtitle="Manage app notifications"
             onPress={() => console.log("Notifications")}
           />
         </View>
 
         {/* Support Section */}
-        <SectionHeader title="Sokongan" />
+        <SectionHeader title="Support" />
         <View backgroundColor="white">
           <SettingItem
             icon={<HelpCircle size={20} color="#1569a0" />}
-            title="Pusat Bantuan"
-            subtitle="FAQ dan panduan"
+            title="Help Center"
+            subtitle="FAQ and guides"
             onPress={() => console.log("Help center")}
           />
           <Separator />
           <SettingItem
             icon={<Info size={20} color="#1569a0" />}
-            title="Tentang eKomuniti"
-            subtitle="Versi 1.0.0"
+            title="About eKomuniti"
+            subtitle="Version 1.0.0"
             onPress={() => console.log("About")}
           />
         </View>
@@ -301,7 +301,7 @@ export default function SettingsScreen() {
         <View marginTop={24} marginBottom={40}>
           <SettingItem
             icon={<LogOut size={20} color="#FF3B30" />}
-            title="Log Keluar"
+            title="Logout"
             onPress={handleLogout}
             showChevron={false}
             isDestructive={true}
